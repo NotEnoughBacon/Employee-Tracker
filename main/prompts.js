@@ -1,6 +1,7 @@
 const Inquirer = require('inquirer');
 const Query = require('./queries');
 
+//the main menu start function that give you the list of options
 function start() {
 
     Inquirer.prompt( [
@@ -24,8 +25,10 @@ function start() {
         }
     ]).then( async (answer) => {
         
+        //depending on wich choice the user selected, do the selected thing
         switch (answer.mainMenu) {
 
+            //Prints out all departments using .table
             case 'View all departments':
 
                 let printDept = await Query.caseQuery(`SELECT * FROM departments`);
@@ -36,6 +39,7 @@ function start() {
 
                 break;
 
+            //Prints out all roles using .table
             case 'View all roles':
 
                 let rolesPrint = await Query.caseQuery(`
@@ -55,6 +59,7 @@ function start() {
 
                 break;
 
+            //Prints out all employees using .table
             case 'View all employees':
 
                 let employeePrint = await Query.caseQuery(`
@@ -84,6 +89,7 @@ function start() {
             
                 break;
 
+            //All these cases refer to a function according to the selection
             case 'Add a department':
 
                 addDepartment();
@@ -114,6 +120,7 @@ function start() {
 
                 break;
 
+            //quits the program
             case 'Quit':
                 
                 process.exit(1);
@@ -121,6 +128,7 @@ function start() {
     });
 }
 
+//Add department, asks the use the name of the department, then submits a query to add it
 function addDepartment() {
 
     Inquirer.prompt( [
@@ -136,6 +144,7 @@ function addDepartment() {
     })
 };
 
+//add role asks the name, salary, and department, then submits a query to add said role
 async function addRole() {
 
     let depts = await Query.toArray(`SELECT * FROM departments`, 'name');
@@ -172,6 +181,7 @@ async function addRole() {
     });
 }
 
+//Asks the user details of the employee, then submits a query to add the employee to the db
 async function addEmployee() {
 
     let employees = await Query.toArray(`SELECT CONCAT (first_name, ' ', last_name) AS name FROM employees`, 'name');
@@ -217,6 +227,7 @@ async function addEmployee() {
     });
 }
 
+//asks the user which employee they want to update, asking them which role to change to, and if they are changing managers. Then submitting a query to update
 async function updateEmployee() {
 
     let employees = await Query.toArray(`SELECT CONCAT (first_name, ' ', last_name) AS name FROM employees`, 'name');
@@ -273,6 +284,7 @@ async function updateEmployee() {
     });
 }
 
+//Added a delete employee that asks which employee the user wants to delete, with 2-step verification and the option to quit anytime
 async function deleteEmployee() {
 
     let employees = await Query.toArray(`SELECT CONCAT (first_name, ' ', last_name) AS name FROM employees`, 'name');
@@ -313,6 +325,7 @@ async function deleteEmployee() {
     })
 }
 
+//exporting the start function
 module.exports = {
     start: start
 };
