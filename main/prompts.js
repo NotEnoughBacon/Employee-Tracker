@@ -91,9 +91,13 @@ function start() {
 
             case 'Add a role':
 
+                addRole();
+
                 break;
 
             case 'Add an employee':
+
+                addEmployee();
 
                 break;
 
@@ -118,8 +122,90 @@ function addDepartment() {
         }
     ]).then( (response) => {
         Query.addDepartment(response.deptName);
+        console.log('Department added sucessfully!')
         start();
     })
+};
+
+async function addRole() {
+
+    let depts = await Query.toArray(`SELECT * FROM departments`, 'name');
+
+    Inquirer.prompt( [
+        {
+            name: 'roleName',
+            type: 'input',
+            message: 'What is the name of the new role?'
+        },
+        {
+            name: 'roleSal',
+            type: 'number',
+            message: 'What is the salary of the new role?'
+        },
+        {
+            name: 'roleDept',
+            type: 'list',
+            message: 'What department is this role under?',
+            choices: depts
+        }
+    ]).then ( async (response) => {
+
+        let dept = await Query.toArray(`SELECT (id) FROM departments WHERE name = '${response.roleDept}'`, 'id');
+
+        if (!response.roleSal.isNaN) {
+
+            Query.addRole(response.roleName, response.roleSal, dept[0]);
+
+            console.log('Role added sucessfully!')
+        }
+
+        start();
+    });
+}
+
+async function addEmployee() {
+
+    let employees = await Query.toArray(`SELECT CONCAT (first_name, ' ', last_name) AS name FROM employees`, 'name');
+    employees.push('None');
+
+    let roles = await Query.toArray(`SELECT * FROM roles`, 'title');
+
+    Inquirer.prompt ( [
+
+        {
+            name: 'firstName',
+            type: 'input',
+            message: 'What is the employees first name?'
+        },
+        {
+            name: 'lastName',
+            type: 'input',
+            message: 'What is the employees last name?'
+        },
+        {
+            name: 'roleName',
+            type: 'list',
+            message: `What is the employee's role?`,
+            choices: roles
+        },
+        {
+            name: 'manager',
+            type: 'list',
+            message: `Who is the employee's manager?`,
+            choices: employees
+        }
+    ]).then ( async (response) => {
+
+        let roleId = await Query.toArray(`SELECT (id) FROM roles WHERE title = '${response.roleName}'`, 'id');
+
+        let managerId = await Query.toArray(`SELECT (id) FROM employees WHERE CONCAT (first_name, ' ',last_name) = '${response.manager}'`, 'id');
+
+        Query.addEmployee(response.firstName, response.lastName, roleId[0], managerId[0]);
+
+        console.log('Employee added sucessfully!')
+
+        start();
+    });
 }
 
 module.exports = {
