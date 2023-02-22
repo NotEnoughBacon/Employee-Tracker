@@ -18,6 +18,7 @@ function start() {
                 'Add a role',
                 'Add an employee',
                 'Update employee role',
+                'Delete employee',
                 'Quit'
             ]          
         }
@@ -102,6 +103,14 @@ function start() {
                 break;
 
             case 'Update employee role':
+
+                updateEmployee();
+
+                break;
+
+            case 'Delete employee':
+
+                deleteEmployee();
 
                 break;
 
@@ -206,6 +215,102 @@ async function addEmployee() {
 
         start();
     });
+}
+
+async function updateEmployee() {
+
+    let employees = await Query.toArray(`SELECT CONCAT (first_name, ' ', last_name) AS name FROM employees`, 'name');
+
+    let roles = await Query.toArray(`SELECT * FROM roles`, 'title');
+
+    let managers = employees;
+    managers.push('none');
+
+    Inquirer.prompt( [
+
+        {
+            name: 'employee',
+            type: 'list',
+            message: 'Which employee would you like to update?',
+            choices: employees
+        },
+        {
+            name: 'updateRole',
+            type: 'list',
+            message: `What is the employee's new role?`,
+            choices: roles
+        },
+        {
+            name: 'changeManager',
+            type: 'confirm',
+            message: 'Will the employee have a new manager?'
+        },
+        {
+            name: 'newManger',
+            type: 'list',
+            message: `Who will be the employee's new manager?`,
+            choices: managers,
+            when: (res) => res.changeManager === true
+        }
+    ]).then ( async (response) => {
+
+        let roleId = await Query.toArray(`SELECT (id) FROM roles WHERE title = '${response.updateRole}'`, 'id');
+
+        let managerId = await Query.toArray(`SELECT (id) FROM employees WHERE CONCAT (first_name, ' ', last_name) = '${response.newManger}'`, 'id');
+
+        if (managerId.length === 0) managerId = null;
+
+        Query.caseQuery(`
+        UPDATE employees
+        SET role_id = ${roleId[0]}
+        ${response.changeManager ? ', manager_id = ' + managerId : ''}
+        WHERE CONCAT (first_name, ' ', last_name) = '${response.employee}'
+        `);
+
+        console.log('Employee updated sucessfully!')
+
+        start();
+    });
+}
+
+async function deleteEmployee() {
+
+    let employees = await Query.toArray(`SELECT CONCAT (first_name, ' ', last_name) AS name FROM employees`, 'name');
+    
+    Inquirer.prompt( [ 
+
+        {
+            name: 'employee',
+            type: 'list',
+            message: 'Which employee would you like to delete?',
+            choices: [...employees, 'Quit']
+        },
+        {
+            name: 'confirm',
+            type: 'confirm',
+            message: (response) => {
+                if (response.employee === 'Quit') {
+                    start();
+                } else {
+                `Are you sure you want to delete '${response.employee}'?`}}
+        }
+    ]).then (async (response) => {
+
+        if (response.confirm === false) {
+            start();
+        } else {
+
+            let employeeId = await Query.toArray(`SELECT (id) FROM employees WHERE CONCAT (first_name, ' ', last_name) = '${response.employee}'`, 'id')
+
+            Query.caseQuery(`
+            DELETE FROM employees WHERE id = '${employeeId[0]}'
+            `)
+        }
+
+        console.log('Employee deleted sucessfully!')
+
+        start();
+    })
 }
 
 module.exports = {
